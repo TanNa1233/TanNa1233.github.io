@@ -156,33 +156,44 @@
       });
     });
   }
-</script>
+  <!-- ✅ Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- ✅ สคริปต์ของคุณ -->
+  <script>
+    const firebaseConfig = {
+      // 🔁 ใส่ config จริงของคุณตรงนี้
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
+    let currentUser = null;
+
+    function register() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) {
+        alert("กรุณากรอกอีเมลและรหัสผ่าน");
+        return;
+      }
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
+        })
+        .catch(error => alert(error.message));
+    }
+
+    // ✅ เชื่อมปุ่ม
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("registerBtn").addEventListener("click", register);
+    });
+  </script>
 
 </body>
-
-<!-- ✅ Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- ✅ สคริปต์ของคุณ ต้องอยู่ที่นี่ -->
-<script>
-  // Firebase config และ initializeApp()
-
-  const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
-  let currentUser = null;
-
-  function register() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    if (!email || !password) {
-      alert("กรุณากรอกอีเมลและรหัสผ่าน");
-      return;
-    }
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(userCredential => {
-        alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
-      })
-      .catch(error => alert(error.message));
-  }
-</html> 
+</html>
