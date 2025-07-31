@@ -2,133 +2,124 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>ระบบขยะ (Tan Kim Kra Sea)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ระบบขยะ + ผู้ใช้</title>
   <style>
     body {
-      margin: 0; padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #4e54c8, #8f94fb);
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
     }
-    .box {
-      background: rgba(0,0,0,0.5);
-      padding: 30px;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 500px;
-    }
+    h1 { color: #333; }
     input, button {
+      padding: 10px;
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: none;
-      font-size: 16px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
     button {
-      background: #00c9a7;
+      background: teal;
       color: white;
       cursor: pointer;
     }
     button:hover {
-      background: #00a98f;
+      background: #007b7b;
     }
     #main-section, #dashboard {
+      display: none;
       margin-top: 20px;
     }
-    .entry {
-      background: rgba(255,255,255,0.15);
+    .user-entry {
+      background: white;
       padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-<div class="box">
-  <h2 style="text-align:center;">ระบบรายงานการทิ้งขยะ</h2>
+<h1>ระบบติดตามการทิ้งขยะ</h1>
 
-  <div id="login-section">
-    <input type="text" id="username" placeholder="กรอกชื่อ: Tan Kim Kra Sea" />
-    <input type="email" id="email" placeholder="(สำหรับผู้ดูแล) อีเมล" />
-    <input type="password" id="password" placeholder="รหัสผ่าน" />
-    <button onclick="login()">เข้าสู่ระบบ</button>
-  </div>
-
-  <div id="main-section" style="display:none;">
-    <p>ยินดีต้อนรับ <strong id="userDisplay"></strong></p>
-    <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะกี่ชิ้น?" />
-    <button onclick="submitTrash()">บันทึกข้อมูล</button>
-    <button onclick="showData()">ดูข้อมูลทั้งหมด</button>
-    <button onclick="logout()" style="background:#f44336;">ออกจากระบบ</button>
-  </div>
-
-  <div id="dashboard" style="display:none;">
-    <h4>รายการทั้งหมด:</h4>
-    <div id="userDataList"></div>
-  </div>
+<div id="auth-section">
+  <input type="text" id="username" placeholder="ชื่อผู้ใช้ (อีเมล)">
+  <input type="password" id="password" placeholder="รหัสผ่าน">
+  <button onclick="register()">สมัครสมาชิก</button>
+  <button onclick="login()">เข้าสู่ระบบ</button>
 </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<div id="main-section">
+  <p>ยินดีต้อนรับ, <strong id="userDisplay"></strong>!</p>
+  <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะไปกี่ชิ้น?">
+  <button onclick="submitTrash()">บันทึกขยะ</button>
+  <button onclick="showData()">ดูข้อมูลทั้งหมด</button>
+</div>
+
+<div id="dashboard">
+  <h3>ข้อมูลผู้ใช้ทั้งหมด:</h3>
+  <div id="userDataList"></div>
+</div>
 
 <script>
-  // ✅ Firebase Config ตรงนี้ต้องแทนค่าด้วยของคุณเอง
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  const USERS_KEY = "users_data";
+  let currentUser = null;
 
-  const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
-  let currentUser = "";
-  let currentEmail = "";
-  let isAdmin = false;
+  // กำหนดรายชื่อผู้มีสิทธิ์เพิ่มคะแนน
+  const SCORE_ADMINS = [
+    "kawinhinmumu@gmail.com",
+    "40085@streesp.ac.th"
+  ];
+
+  function getUsers() {
+    return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function register() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      return;
+    }
+
+    let users = getUsers();
+    if (users[username]) {
+      alert("ชื่อผู้ใช้นี้ถูกใช้แล้ว! โปรดเข้าสู่ระบบ");
+      return;
+    }
+
+    users[username] = { password: password, trash: 0, score: 0 };
+    saveUsers(users);
+    alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
+  }
 
   function login() {
     const username = document.getElementById('username').value.trim();
-    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
-    
+    let users = getUsers();
+    if (!users[username]) {
+      alert("ไม่พบผู้ใช้นี้! กรุณาสมัครก่อน");
+      return;
     }
-    if (!password) {
-      alert("กรุณากรอกรหัสผ่าน");
+
+    if (users[username].password !== password) {
+      alert("รหัสผ่านไม่ถูกต้อง");
       return;
     }
 
     currentUser = username;
-    currentEmail = email;
-    isAdmin = adminEmails.includes(currentEmail);
-
-    document.getElementById('userDisplay').innerText = currentUser + (isAdmin ? " (Admin)" : "");
-    document.getElementById('login-section').style.display = 'none';
-    document.getElementById('main-section').style.display = 'block';
-  }
-
-  function logout() {
-    currentUser = "";
-    currentEmail = "";
-    isAdmin = false;
-    document.getElementById('username').value = "";
-    document.getElementById('email').value = "";
-    document.getElementById('password').value = "";
-    document.getElementById('main-section').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'none';
-    document.getElementById('login-section').style.display = 'block';
+    document.getElementById("auth-section").style.display = "none";
+    document.getElementById("main-section").style.display = "block";
+    document.getElementById("userDisplay").innerText = username;
   }
 
   function submitTrash() {
@@ -138,52 +129,53 @@
       return;
     }
 
-    const entryRef = db.ref("entries").push();
-    entryRef.set({
-      username: currentUser,
-      email: currentEmail || "-",
-      trash: count,
-      score: 0,
-      timestamp: Date.now()
-    }).then(() => {
-      alert("บันทึกเรียบร้อย");
-      document.getElementById('trashCount').value = "";
-    });
+    let users = getUsers();
+    users[currentUser].trash += count;
+    saveUsers(users);
+
+    alert("บันทึกข้อมูลเรียบร้อย ✅");
+    document.getElementById('trashCount').value = '';
   }
 
   function showData() {
-    db.ref("entries").get().then(snapshot => {
-      const container = document.getElementById('userDataList');
-      container.innerHTML = "";
-      const data = snapshot.val() || {};
-      Object.entries(data).forEach(([id, entry]) => {
-        const div = document.createElement('div');
-        div.className = "entry";
-        div.innerHTML = `
-          <strong>${entry.username}</strong><br>
-          ขยะ: ${entry.trash} ชิ้น<br>
-          คะแนน: ${entry.score || 0}<br>
-          ${isAdmin ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${id}', this.value)">` : ''}
-        `;
-        container.appendChild(div);
-      });
-      document.getElementById('dashboard').style.display = 'block';
+    const users = getUsers();
+    const container = document.getElementById('userDataList');
+    container.innerHTML = '';
+
+    const isScoreAdmin = SCORE_ADMINS.includes(currentUser);
+
+    Object.keys(users).forEach(user => {
+      const div = document.createElement('div');
+      div.className = 'user-entry';
+      div.innerHTML = `
+        <strong>${user}</strong><br>
+        ขยะสะสม: ${users[user].trash} ชิ้น<br>
+        คะแนน: ${users[user].score}<br>
+        ${
+          isScoreAdmin
+            ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${user}', this.value)">`
+            : ""
+        }
+      `;
+      container.appendChild(div);
     });
+
+    document.getElementById('dashboard').style.display = 'block';
   }
 
-  function addScore(id, value) {
-    const score = parseInt(value);
-    if (isNaN(score)) return;
-    if (!isAdmin) {
-      alert("คุณไม่มีสิทธิ์เพิ่มคะแนน");
+  function addScore(user, value) {
+    if (!SCORE_ADMINS.includes(currentUser)) {
+      alert("คุณไม่มีสิทธิ์ในการเพิ่มคะแนน");
       return;
     }
-    const entryRef = db.ref("entries/" + id);
-    entryRef.get().then(snapshot => {
-      const data = snapshot.val() || {};
-      data.score = (data.score || 0) + score;
-      return entryRef.set(data);
-    }).then(() => showData());
+
+    const score = parseInt(value);
+    if (isNaN(score)) return;
+
+    let users = getUsers();
+    users[user].score += score;
+    saveUsers(users);
+    showData(); // refresh dashboard
   }
 </script>
 
