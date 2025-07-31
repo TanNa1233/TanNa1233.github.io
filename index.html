@@ -1,199 +1,249 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <title>ระบบขยะ + ผู้ใช้ (Firebase)</title>
-  <style>
-    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #f0f0f0; }
-    input, button { padding: 10px; width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: teal; color: white; cursor: pointer; }
-    button:hover { background: #007b7b; }
-    #main-section, #dashboard { display: none; margin-top: 20px; }
-    .user-entry { background: white; padding: 10px; margin-bottom: 10px; border-radius: 6px; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ระบบขยะ + ผู้ใช้</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  body, html { height: 100%; background: linear-gradient(135deg, #4e54c8, #8f94fb); color: #fff; }
+  .container {
+    max-width: 600px;
+    margin: auto;
+    padding: 30px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 15px;
+    margin-top: 40px;
+  }
+  h1 { text-align: center; margin-bottom: 20px; }
+  input[type=text], input[type=number], input[type=password] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    margin: 10px 0 20px 0;
+    font-size: 16px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #6a82fb;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #fc5c7d;
+  }
+  #dashboard {
+    margin-top: 30px;
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .entry {
+    margin-bottom: 15px;
+    background: rgba(255,255,255,0.15);
+    padding: 10px;
+    border-radius: 8px;
+  }
+  .entry strong {
+    display: block;
+    margin-bottom: 5px;
+  }
+  .score-input {
+    width: 60px;
+    padding: 6px;
+    margin-left: 10px;
+    border-radius: 6px;
+    border: none;
+  }
+</style>
 </head>
 <body>
 
-<h1>ระบบติดตามการทิ้งขยะ</h1>
+<div class="container">
 
-<div id="auth-section">
-  <input type="email" id="email" placeholder="อีเมล" />
-  <input type="password" id="password" placeholder="รหัสผ่าน" />
-  <button onclick="register()">สมัครสมาชิก</button>
-  <button onclick="login()">เข้าสู่ระบบ</button>
+  <h1>ระบบติดตามการทิ้งขยะ</h1>
+
+  <div id="auth-section">
+    <input type="text" id="username" placeholder="ชื่อผู้ใช้" />
+    <input type="password" id="password" placeholder="รหัสผ่าน" />
+    <button id="registerBtn">สมัครสมาชิก</button>
+    <button id="loginBtn">เข้าสู่ระบบ</button>
+  </div>
+
+  <div id="main-section" style="display:none;">
+    <p>ยินดีต้อนรับ, <strong id="userDisplay"></strong>!</p>
+    <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะไปกี่ชิ้น?" min="0" />
+    <button id="submitTrashBtn">บันทึกขยะ</button>
+    <button id="showDataBtn">ดูข้อมูลทั้งหมด</button>
+    <button id="logoutBtn" style="background:#f44336;margin-top:10px;">ออกจากระบบ</button>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <h3>ข้อมูลผู้ใช้ทั้งหมด</h3>
+    <div id="userDataList"></div>
+  </div>
+
 </div>
 
-<div id="main-section">
-  <p>ยินดีต้อนรับ, <strong id="userDisplay"></strong>!</p>
-  <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะไปกี่ชิ้น?" />
-  <button onclick="submitTrash()">บันทึกขยะ</button>
-  <button onclick="showData()">ดูข้อมูลทั้งหมด</button>
-  <button onclick="logout()">ออกจากระบบ</button>
-</div>
-
-<div id="dashboard">
-  <h3>ข้อมูลผู้ใช้ทั้งหมด:</h3>
-  <div id="userDataList"></div>
-</div>
-
-<!-- Firebase -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  // ใส่ config ของ Firebase โปรเจกต์คุณตรงนี้
- const firebaseConfig = {
-  apiKey: "AIzaSyBGuJzWWSrUZuTu0yOOyr6no5BvMn0TTCI",
-  authDomain: "tan12-39f3c.firebaseapp.com",
-  databaseURL: "https://tan12-39f3c-default-rtdb.firebaseio.com",
-  projectId: "tan12-39f3c",
-  storageBucket: "tan12-39f3c.firebasestorage.app",
-  messagingSenderId: "221016907978",
-  appId: "1:221016907978:web:c65942c751852b32ff5433",
-  measurementId: "G-SJLXXDF97C"
-};
+  // ใส่ config โปรเจกต์ Firebase ของคุณที่นี่
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
 
   const auth = firebase.auth();
   const db = firebase.database();
 
-  const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
+  // อนุญาต username ที่จะสมัครได้แค่ชื่อเดียว
+  const allowedUsername = "Tan Kra Kim Sea";
+
   let currentUser = null;
 
-  
-
-  function login() {
-    const email = document.getElementById('email').value.trim();
+  document.getElementById('registerBtn').onclick = () => {
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
-    if (!email || !password) {
-      alert("กรุณากรอกอีเมลและรหัสผ่าน");
+    if(username !== allowedUsername){
+      alert("ขออภัย! ระบบอนุญาตให้สมัครเฉพาะผู้ใช้ชื่อ: " + allowedUsername);
       return;
     }
-    auth.signInWithEmailAndPassword(email, password)
+    if(!username || !password){
+      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      return;
+    }
+    // ใช้ username@fake.com แทนอีเมลใน Firebase Auth
+    const fakeEmail = username.replace(/ /g,'').toLowerCase() + "@fake.com";
+
+    auth.createUserWithEmailAndPassword(fakeEmail, password)
+      .then(() => alert("สมัครสมาชิกเรียบร้อย กรุณาล็อกอิน"))
+      .catch(error => alert(error.message));
+  };
+
+  document.getElementById('loginBtn').onclick = () => {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if(username !== allowedUsername){
+      alert("ขออภัย! ระบบอนุญาตให้เข้าสู่ระบบเฉพาะผู้ใช้ชื่อ: " + allowedUsername);
+      return;
+    }
+    if(!username || !password){
+      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      return;
+    }
+    const fakeEmail = username.replace(/ /g,'').toLowerCase() + "@fake.com";
+
+    auth.signInWithEmailAndPassword(fakeEmail, password)
       .then(userCredential => {
         currentUser = userCredential.user;
         document.getElementById('auth-section').style.display = "none";
         document.getElementById('main-section').style.display = "block";
-        document.getElementById('userDisplay').innerText = currentUser.email;
+        document.getElementById('userDisplay').innerText = username;
       })
       .catch(error => alert(error.message));
-  }
+  };
 
-  function logout() {
+  document.getElementById('logoutBtn').onclick = () => {
     auth.signOut().then(() => {
       currentUser = null;
       document.getElementById('auth-section').style.display = "block";
       document.getElementById('main-section').style.display = "none";
       document.getElementById('dashboard').style.display = "none";
-      document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('trashCount').value = '';
+      document.getElementById('username').value = "";
+      document.getElementById('password').value = "";
+      document.getElementById('trashCount').value = "";
     });
-  }
+  };
 
-  function submitTrash() {
+  document.getElementById('submitTrashBtn').onclick = () => {
     const count = parseInt(document.getElementById('trashCount').value);
-    if (isNaN(count) || count < 0) {
+    if(isNaN(count) || count < 0){
       alert("กรุณากรอกจำนวนขยะที่ถูกต้อง");
       return;
     }
-    const userRef = db.ref('users/' + currentUser.uid);
-    userRef.get().then(snapshot => {
-      const data = snapshot.val() || { trash: 0, score: 0, email: currentUser.email };
-      data.trash += count;
-      userRef.set(data).then(() => {
-        alert("บันทึกข้อมูลเรียบร้อย ✅");
-        document.getElementById('trashCount').value = '';
-      });
-    });
-  }
-
-  function showData() {
-    db.ref('users').get().then(snapshot => {
-      const users = snapshot.val() || {};
-      const container = document.getElementById('userDataList');
-      container.innerHTML = '';
-
-      Object.entries(users).forEach(([uid, user]) => {
-        const canAddScore = adminEmails.includes(user.email);
-        const div = document.createElement('div');
-        div.className = 'user-entry';
-        div.innerHTML = 
-          <strong>${user.email || 'ไม่ทราบอีเมล'}</strong><br>
-          ขยะสะสม: ${user.trash || 0} ชิ้น<br>
-          คะแนน: ${user.score || 0}<br>
-          ${canAddScore ? <input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${uid}', this.value)"> : ''}
-        ;
-        container.appendChild(div);
-      });
-
-      document.getElementById('dashboard').style.display = 'block';
-    });
-  }
-
-  function addScore(uid, value) {
-    const scoreToAdd = parseInt(value);
-    if (isNaN(scoreToAdd)) return;
-
-    // เช็คสิทธิ์ admin ก่อนเพิ่มคะแนน
-    if (!currentUser) return alert("กรุณาล็อกอิน");
-
-    if (!adminEmails.includes(currentUser.email)) {
-      alert("คุณไม่มีสิทธิ์เพิ่มคะแนน");
-      showData();
+    if(!currentUser){
+      alert("กรุณาล็อกอิน");
       return;
     }
 
+    const userRef = db.ref('users/' + currentUser.uid);
+    userRef.get().then(snapshot => {
+      let data = snapshot.val() || { trash: 0, score: 0, username: allowedUsername };
+      data.trash += count;
+      return userRef.set(data);
+    }).then(() => {
+      alert("บันทึกข้อมูลเรียบร้อย");
+      document.getElementById('trashCount').value = "";
+    });
+  };
+
+  document.getElementById('showDataBtn').onclick = () => {
+    db.ref('users').get().then(snapshot => {
+      const users = snapshot.val() || {};
+      const container = document.getElementById('userDataList');
+      container.innerHTML = "";
+      Object.entries(users).forEach(([uid, user]) => {
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `
+          <strong>${user.username || "ไม่ทราบชื่อ"}</strong><br>
+          ขยะสะสม: ${user.trash || 0} ชิ้น<br>
+          คะแนน: ${user.score || 0}<br>
+          <input class="score-input" type="number" placeholder="เพิ่มคะแนน" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+          <button onclick="addScore('${uid}', this.previousElementSibling.value)">เพิ่มคะแนน</button>
+        `;
+        container.appendChild(div);
+      });
+      document.getElementById('dashboard').style.display = "block";
+    });
+  };
+
+  function addScore(uid, val){
+    const score = parseInt(val);
+    if(isNaN(score) || score <= 0) {
+      alert("กรุณากรอกคะแนนที่ถูกต้อง");
+      return;
+    }
     const userRef = db.ref('users/' + uid);
     userRef.get().then(snapshot => {
       const data = snapshot.val() || { trash: 0, score: 0 };
-      data.score += scoreToAdd;
-      userRef.set(data).then(() => {
-        showData();
-      });
+      data.score += score;
+      return userRef.set(data);
+    }).then(() => {
+      alert("เพิ่มคะแนนเรียบร้อย");
+      document.getElementById('showDataBtn').click(); // รีเฟรชข้อมูล
     });
   }
-  <!-- ✅ Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- ✅ สคริปต์ของคุณ -->
-  <script>
-    const firebaseConfig = {
-      // 🔁 ใส่ config จริงของคุณตรงนี้
-    };
-    firebase.initializeApp(firebaseConfig);
-
-    const auth = firebase.auth();
-    const db = firebase.database();
-
-    const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
-    let currentUser = null;
-
-    function register() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      if (!email || !password) {
-        alert("กรุณากรอกอีเมลและรหัสผ่าน");
-        return;
-      }
-
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
-        })
-        .catch(error => alert(error.message));
+  // ตรวจสอบสถานะล็อกอินตอนโหลดหน้า
+  auth.onAuthStateChanged(user => {
+    if(user){
+      currentUser = user;
+      document.getElementById('auth-section').style.display = "none";
+      document.getElementById('main-section').style.display = "block";
+      document.getElementById('userDisplay').innerText = allowedUsername;
     }
-
-    // ✅ เชื่อมปุ่ม
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById("registerBtn").addEventListener("click", register);
-    });
-  </script>
+  });
+</script>
 
 </body>
 </html>
