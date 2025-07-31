@@ -173,6 +173,130 @@
     saveUsers(users);
     showData(); // รีเฟรชข้อมูล
   }
+  <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // Firebase config — เปลี่ยนเป็นของคุณเองนะ
+ const firebaseConfig = {
+  apiKey: "AIzaSyBGuJzWWSrUZuTu0yOOyr6no5BvMn0TTCI",
+  authDomain: "tan12-39f3c.firebaseapp.com",
+  databaseURL: "https://tan12-39f3c-default-rtdb.firebaseio.com",
+  projectId: "tan12-39f3c",
+  storageBucket: "tan12-39f3c.firebasestorage.app",
+  messagingSenderId: "221016907978",
+  appId: "1:221016907978:web:c65942c751852b32ff5433",
+  measurementId: "G-SJLXXDF97C"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  <script>
+  const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
+  let currentUser = null;
+
+  function register() {
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+      alert("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => {
+        alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
+      })
+      .catch(error => alert(error.message));
+  }
+
+  function login() {
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+      alert("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        currentUser = userCredential.user;
+        document.getElementById("auth-section").style.display = "none";
+        document.getElementById("main-section").style.display = "block";
+        document.getElementById("userDisplay").innerText = currentUser.email;
+      })
+      .catch(error => alert(error.message));
+  }
+
+  function submitTrash() {
+    const count = parseInt(document.getElementById('trashCount').value);
+    if (isNaN(count) || count < 0) {
+      alert("กรุณากรอกจำนวนขยะที่ถูกต้อง");
+      return;
+    }
+
+    const userRef = db.ref('users/' + currentUser.uid);
+    userRef.get().then(snapshot => {
+      const data = snapshot.val() || {
+        email: currentUser.email,
+        trash: 0,
+        score: 0
+      };
+      data.trash += count;
+      userRef.set(data).then(() => {
+        alert("บันทึกเรียบร้อย ✅");
+        document.getElementById('trashCount').value = '';
+      });
+    });
+  }
+
+  function showData() {
+    db.ref('users').get().then(snapshot => {
+      const users = snapshot.val() || {};
+      const container = document.getElementById("userDataList");
+      container.innerHTML = "";
+
+      Object.entries(users).forEach(([uid, user]) => {
+        const isAdmin = adminEmails.includes(currentUser.email);
+        const entry = document.createElement("div");
+        entry.className = "user-entry";
+        entry.innerHTML = `
+          <strong>${user.email}</strong><br>
+          ขยะสะสม: ${user.trash || 0} ชิ้น<br>
+          คะแนน: ${user.score || 0}<br>
+          ${isAdmin ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${uid}', this.value)">` : ""}
+        `;
+        container.appendChild(entry);
+      });
+
+      document.getElementById("dashboard").style.display = "block";
+    });
+  }
+
+  function addScore(uid, value) {
+    const scoreToAdd = parseInt(value);
+    if (isNaN(scoreToAdd)) return;
+
+    if (!adminEmails.includes(currentUser.email)) {
+      alert("คุณไม่มีสิทธิ์เพิ่มคะแนน");
+      return;
+    }
+
+    const userRef = db.ref('users/' + uid);
+    userRef.get().then(snapshot => {
+      const data = snapshot.val() || { score: 0, trash: 0, email: "" };
+      data.score += scoreToAdd;
+      userRef.set(data).then(() => {
+        showData(); // refresh
+      });
+    });
+  }
+</script>
+
+  const auth = firebase.auth();
+  const db = firebase.database();
+</script>
 </script>
 
 </body>
