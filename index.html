@@ -1,105 +1,86 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ระบบขยะ + ผู้ใช้</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  body, html { height: 100%; background: linear-gradient(135deg, #4e54c8, #8f94fb); color: #fff; }
-  .container {
-    max-width: 600px;
-    margin: auto;
-    padding: 30px;
-    background: rgba(0,0,0,0.5);
-    border-radius: 15px;
-    margin-top: 40px;
-  }
-  h1 { text-align: center; margin-bottom: 20px; }
-  input[type=text], input[type=number], input[type=password] {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: none;
-    margin: 10px 0 20px 0;
-    font-size: 16px;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background: #6a82fb;
-    font-size: 16px;
-    color: white;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  button:hover {
-    background: #fc5c7d;
-  }
-  #dashboard {
-    margin-top: 30px;
-    background: rgba(255,255,255,0.1);
-    padding: 15px;
-    border-radius: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  .entry {
-    margin-bottom: 15px;
-    background: rgba(255,255,255,0.15);
-    padding: 10px;
-    border-radius: 8px;
-  }
-  .entry strong {
-    display: block;
-    margin-bottom: 5px;
-  }
-  .score-input {
-    width: 60px;
-    padding: 6px;
-    margin-left: 10px;
-    border-radius: 6px;
-    border: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>ระบบขยะ (Tan Kim Kra Sea)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .box {
+      background: rgba(0,0,0,0.5);
+      padding: 30px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background: #00c9a7;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00a98f;
+    }
+    #main-section, #dashboard {
+      margin-top: 20px;
+    }
+    .entry {
+      background: rgba(255,255,255,0.15);
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
+<div class="box">
+  <h2 style="text-align:center;">ระบบรายงานการทิ้งขยะ</h2>
 
-  <h1>ระบบติดตามการทิ้งขยะ</h1>
-
-  <div id="auth-section">
-    <input type="text" id="username" placeholder="ชื่อผู้ใช้" />
+  <div id="login-section">
+    <input type="text" id="username" placeholder="กรอกชื่อ: Tan Kim Kra Sea" />
+    <input type="email" id="email" placeholder="(สำหรับผู้ดูแล) อีเมล" />
     <input type="password" id="password" placeholder="รหัสผ่าน" />
-    <button id="registerBtn">สมัครสมาชิก</button>
-    <button id="loginBtn">เข้าสู่ระบบ</button>
+    <button onclick="login()">เข้าสู่ระบบ</button>
   </div>
 
   <div id="main-section" style="display:none;">
-    <p>ยินดีต้อนรับ, <strong id="userDisplay"></strong>!</p>
-    <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะไปกี่ชิ้น?" min="0" />
-    <button id="submitTrashBtn">บันทึกขยะ</button>
-    <button id="showDataBtn">ดูข้อมูลทั้งหมด</button>
-    <button id="logoutBtn" style="background:#f44336;margin-top:10px;">ออกจากระบบ</button>
+    <p>ยินดีต้อนรับ <strong id="userDisplay"></strong></p>
+    <input type="number" id="trashCount" placeholder="วันนี้ทิ้งขยะกี่ชิ้น?" />
+    <button onclick="submitTrash()">บันทึกข้อมูล</button>
+    <button onclick="showData()">ดูข้อมูลทั้งหมด</button>
+    <button onclick="logout()" style="background:#f44336;">ออกจากระบบ</button>
   </div>
 
   <div id="dashboard" style="display:none;">
-    <h3>ข้อมูลผู้ใช้ทั้งหมด</h3>
+    <h4>รายการทั้งหมด:</h4>
     <div id="userDataList"></div>
   </div>
-
 </div>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  // ใส่ config โปรเจกต์ Firebase ของคุณที่นี่
+  // ✅ Firebase Config ตรงนี้ต้องแทนค่าด้วยของคุณเอง
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -109,140 +90,103 @@
     messagingSenderId: "YOUR_SENDER_ID",
     appId: "YOUR_APP_ID"
   };
-
   firebase.initializeApp(firebaseConfig);
-
-  const auth = firebase.auth();
   const db = firebase.database();
 
-  // อนุญาต username ที่จะสมัครได้แค่ชื่อเดียว
-  const allowedUsername = "Tan Kra Kim Sea";
+  const adminEmails = ["kawinhinmumu@gmail.com", "40085@streesp.ac.th"];
+  let currentUser = "";
+  let currentEmail = "";
+  let isAdmin = false;
 
-  let currentUser = null;
-
-  document.getElementById('registerBtn').onclick = () => {
+  function login() {
     const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    if(username !== allowedUsername){
-      alert("ขออภัย! ระบบอนุญาตให้สมัครเฉพาะผู้ใช้ชื่อ: " + allowedUsername);
+
+    if (username !== "Tan Kim Kra Sea") {
+      alert("ชื่อผู้ใช้ต้องเป็น: Tan Kim Kra Sea");
       return;
     }
-    if(!username || !password){
-      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+    if (!password) {
+      alert("กรุณากรอกรหัสผ่าน");
       return;
     }
-    // ใช้ username@fake.com แทนอีเมลใน Firebase Auth
-    const fakeEmail = username.replace(/ /g,'').toLowerCase() + "@fake.com";
 
-    auth.createUserWithEmailAndPassword(fakeEmail, password)
-      .then(() => alert("สมัครสมาชิกเรียบร้อย กรุณาล็อกอิน"))
-      .catch(error => alert(error.message));
-  };
+    currentUser = username;
+    currentEmail = email;
+    isAdmin = adminEmails.includes(currentEmail);
 
-  document.getElementById('loginBtn').onclick = () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    if(username !== allowedUsername){
-      alert("ขออภัย! ระบบอนุญาตให้เข้าสู่ระบบเฉพาะผู้ใช้ชื่อ: " + allowedUsername);
-      return;
-    }
-    if(!username || !password){
-      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
-      return;
-    }
-    const fakeEmail = username.replace(/ /g,'').toLowerCase() + "@fake.com";
+    document.getElementById('userDisplay').innerText = currentUser + (isAdmin ? " (Admin)" : "");
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('main-section').style.display = 'block';
+  }
 
-    auth.signInWithEmailAndPassword(fakeEmail, password)
-      .then(userCredential => {
-        currentUser = userCredential.user;
-        document.getElementById('auth-section').style.display = "none";
-        document.getElementById('main-section').style.display = "block";
-        document.getElementById('userDisplay').innerText = username;
-      })
-      .catch(error => alert(error.message));
-  };
+  function logout() {
+    currentUser = "";
+    currentEmail = "";
+    isAdmin = false;
+    document.getElementById('username').value = "";
+    document.getElementById('email').value = "";
+    document.getElementById('password').value = "";
+    document.getElementById('main-section').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-section').style.display = 'block';
+  }
 
-  document.getElementById('logoutBtn').onclick = () => {
-    auth.signOut().then(() => {
-      currentUser = null;
-      document.getElementById('auth-section').style.display = "block";
-      document.getElementById('main-section').style.display = "none";
-      document.getElementById('dashboard').style.display = "none";
-      document.getElementById('username').value = "";
-      document.getElementById('password').value = "";
-      document.getElementById('trashCount').value = "";
-    });
-  };
-
-  document.getElementById('submitTrashBtn').onclick = () => {
+  function submitTrash() {
     const count = parseInt(document.getElementById('trashCount').value);
-    if(isNaN(count) || count < 0){
+    if (isNaN(count) || count < 0) {
       alert("กรุณากรอกจำนวนขยะที่ถูกต้อง");
       return;
     }
-    if(!currentUser){
-      alert("กรุณาล็อกอิน");
-      return;
-    }
 
-    const userRef = db.ref('users/' + currentUser.uid);
-    userRef.get().then(snapshot => {
-      let data = snapshot.val() || { trash: 0, score: 0, username: allowedUsername };
-      data.trash += count;
-      return userRef.set(data);
+    const entryRef = db.ref("entries").push();
+    entryRef.set({
+      username: currentUser,
+      email: currentEmail || "-",
+      trash: count,
+      score: 0,
+      timestamp: Date.now()
     }).then(() => {
-      alert("บันทึกข้อมูลเรียบร้อย");
+      alert("บันทึกเรียบร้อย");
       document.getElementById('trashCount').value = "";
-    });
-  };
-
-  document.getElementById('showDataBtn').onclick = () => {
-    db.ref('users').get().then(snapshot => {
-      const users = snapshot.val() || {};
-      const container = document.getElementById('userDataList');
-      container.innerHTML = "";
-      Object.entries(users).forEach(([uid, user]) => {
-        const div = document.createElement('div');
-        div.className = 'entry';
-        div.innerHTML = `
-          <strong>${user.username || "ไม่ทราบชื่อ"}</strong><br>
-          ขยะสะสม: ${user.trash || 0} ชิ้น<br>
-          คะแนน: ${user.score || 0}<br>
-          <input class="score-input" type="number" placeholder="เพิ่มคะแนน" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
-          <button onclick="addScore('${uid}', this.previousElementSibling.value)">เพิ่มคะแนน</button>
-        `;
-        container.appendChild(div);
-      });
-      document.getElementById('dashboard').style.display = "block";
-    });
-  };
-
-  function addScore(uid, val){
-    const score = parseInt(val);
-    if(isNaN(score) || score <= 0) {
-      alert("กรุณากรอกคะแนนที่ถูกต้อง");
-      return;
-    }
-    const userRef = db.ref('users/' + uid);
-    userRef.get().then(snapshot => {
-      const data = snapshot.val() || { trash: 0, score: 0 };
-      data.score += score;
-      return userRef.set(data);
-    }).then(() => {
-      alert("เพิ่มคะแนนเรียบร้อย");
-      document.getElementById('showDataBtn').click(); // รีเฟรชข้อมูล
     });
   }
 
-  // ตรวจสอบสถานะล็อกอินตอนโหลดหน้า
-  auth.onAuthStateChanged(user => {
-    if(user){
-      currentUser = user;
-      document.getElementById('auth-section').style.display = "none";
-      document.getElementById('main-section').style.display = "block";
-      document.getElementById('userDisplay').innerText = allowedUsername;
+  function showData() {
+    db.ref("entries").get().then(snapshot => {
+      const container = document.getElementById('userDataList');
+      container.innerHTML = "";
+      const data = snapshot.val() || {};
+      Object.entries(data).forEach(([id, entry]) => {
+        const div = document.createElement('div');
+        div.className = "entry";
+        div.innerHTML = `
+          <strong>${entry.username}</strong><br>
+          ขยะ: ${entry.trash} ชิ้น<br>
+          คะแนน: ${entry.score || 0}<br>
+          ${isAdmin ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${id}', this.value)">` : ''}
+        `;
+        container.appendChild(div);
+      });
+      document.getElementById('dashboard').style.display = 'block';
+    });
+  }
+
+  function addScore(id, value) {
+    const score = parseInt(value);
+    if (isNaN(score)) return;
+    if (!isAdmin) {
+      alert("คุณไม่มีสิทธิ์เพิ่มคะแนน");
+      return;
     }
-  });
+    const entryRef = db.ref("entries/" + id);
+    entryRef.get().then(snapshot => {
+      const data = snapshot.val() || {};
+      data.score = (data.score || 0) + score;
+      return entryRef.set(data);
+    }).then(() => showData());
+  }
 </script>
 
 </body>
