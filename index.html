@@ -45,7 +45,7 @@
 <h1>ระบบติดตามการทิ้งขยะ</h1>
 
 <div id="auth-section">
-  <input type="text" id="username" placeholder="ชื่อผู้ใช้ (อีเมล)">
+  <input type="text" id="username" placeholder="อีเมลผู้ใช้">
   <input type="password" id="password" placeholder="รหัสผ่าน">
   <button onclick="register()">สมัครสมาชิก</button>
   <button onclick="login()">เข้าสู่ระบบ</button>
@@ -67,7 +67,7 @@
   const USERS_KEY = "users_data";
   let currentUser = null;
 
-  // กำหนดรายชื่อผู้มีสิทธิ์เพิ่มคะแนน
+  // ✅ เฉพาะคนที่ให้คะแนนได้
   const SCORE_ADMINS = [
     "kawinhinmumu@gmail.com",
     "40085@streesp.ac.th"
@@ -86,19 +86,19 @@
     const password = document.getElementById('password').value;
 
     if (!username || !password) {
-      alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
+      alert("กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
 
     let users = getUsers();
     if (users[username]) {
-      alert("ชื่อผู้ใช้นี้ถูกใช้แล้ว! โปรดเข้าสู่ระบบ");
+      alert("ผู้ใช้นี้มีอยู่แล้ว! กรุณาเข้าสู่ระบบ");
       return;
     }
 
     users[username] = { password: password, trash: 0, score: 0 };
     saveUsers(users);
-    alert("สมัครสมาชิกเรียบร้อย ✅ กรุณาล็อกอิน");
+    alert("สมัครเรียบร้อย ✅ กรุณาล็อกอิน");
   }
 
   function login() {
@@ -107,7 +107,7 @@
 
     let users = getUsers();
     if (!users[username]) {
-      alert("ไม่พบผู้ใช้นี้! กรุณาสมัครก่อน");
+      alert("ไม่พบผู้ใช้ กรุณาสมัครก่อน");
       return;
     }
 
@@ -133,7 +133,7 @@
     users[currentUser].trash += count;
     saveUsers(users);
 
-    alert("บันทึกข้อมูลเรียบร้อย ✅");
+    alert("บันทึกข้อมูลแล้ว ✅");
     document.getElementById('trashCount').value = '';
   }
 
@@ -151,11 +151,7 @@
         <strong>${user}</strong><br>
         ขยะสะสม: ${users[user].trash} ชิ้น<br>
         คะแนน: ${users[user].score}<br>
-        ${
-          isScoreAdmin
-            ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${user}', this.value)">`
-            : ""
-        }
+        ${isScoreAdmin ? `<input type="number" placeholder="เพิ่มคะแนน" onchange="addScore('${user}', this.value)">` : ""}
       `;
       container.appendChild(div);
     });
@@ -165,7 +161,7 @@
 
   function addScore(user, value) {
     if (!SCORE_ADMINS.includes(currentUser)) {
-      alert("คุณไม่มีสิทธิ์ในการเพิ่มคะแนน");
+      alert("คุณไม่มีสิทธิ์เพิ่มคะแนน");
       return;
     }
 
@@ -175,7 +171,7 @@
     let users = getUsers();
     users[user].score += score;
     saveUsers(users);
-    showData(); // refresh dashboard
+    showData(); // รีเฟรชข้อมูล
   }
 </script>
 
